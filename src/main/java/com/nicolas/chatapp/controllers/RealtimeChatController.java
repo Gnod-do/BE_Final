@@ -1,5 +1,6 @@
 package com.nicolas.chatapp.controllers;
 
+import com.nicolas.chatapp.dto.response.TypingDTO;
 import com.nicolas.chatapp.model.Message;
 import com.nicolas.chatapp.model.User;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +20,20 @@ public class RealtimeChatController {
 
     @MessageMapping("/messages")
     public void receiveMessage(@Payload Message message) {
+
+        messagingTemplate.convertAndSend("/topic/" + message.getChat().getId(), message);
+
         for (User user : message.getChat().getUsers()) {
             final String destination = "/topic/" + user.getId();
             messagingTemplate.convertAndSend(destination, message);
         }
+    }
+
+
+    @MessageMapping("/typing")
+    public void handleTyping(@Payload TypingDTO typing) {
+        messagingTemplate.convertAndSend("/topic/typing/" + typing.getChatId(), typing);
+        log.info("Send typing to server");
     }
 
 }
