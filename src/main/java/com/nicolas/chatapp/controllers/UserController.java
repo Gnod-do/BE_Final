@@ -4,9 +4,12 @@ import com.nicolas.chatapp.config.JwtConstants;
 import com.nicolas.chatapp.dto.request.UpdateUserRequestDTO;
 import com.nicolas.chatapp.dto.response.ApiResponseDTO;
 import com.nicolas.chatapp.dto.response.UserDTO;
+import com.nicolas.chatapp.dto.response.UserStatusDTO;
 import com.nicolas.chatapp.exception.UserException;
 import com.nicolas.chatapp.model.User;
+import com.nicolas.chatapp.repository.UserStatusRepository;
 import com.nicolas.chatapp.service.UserService;
+import com.nicolas.chatapp.service.implementation.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -23,6 +27,8 @@ import java.util.Set;
 public class UserController {
 
     private final UserService userService;
+
+    private final UserServiceImpl userServiceImp;
 
     @GetMapping("/profile")
     public ResponseEntity<UserDTO> getUserProfile(@RequestHeader(JwtConstants.TOKEN_HEADER) String token) throws UserException {
@@ -63,6 +69,18 @@ public class UserController {
                 .build();
 
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/online-status")
+    public ResponseEntity<List<UserStatusDTO>> getAllUserStatuses(){
+        List<UserStatusDTO> statuses = userServiceImp.getAllUserStatuses();
+
+        // Lọc chỉ những user đang online
+        List<UserStatusDTO> onlineUsers = statuses.stream()
+                .filter(UserStatusDTO::isOnline) // hoặc u -> u.isOnline()
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(onlineUsers);
     }
 
 }

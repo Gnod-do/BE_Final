@@ -6,7 +6,9 @@ import com.nicolas.chatapp.dto.request.UpdateUserRequestDTO;
 import com.nicolas.chatapp.dto.response.LoginResponseDTO;
 import com.nicolas.chatapp.exception.UserException;
 import com.nicolas.chatapp.model.User;
+import com.nicolas.chatapp.model.UserStatus;
 import com.nicolas.chatapp.repository.UserRepository;
+import com.nicolas.chatapp.repository.UserStatusRepository;
 import com.nicolas.chatapp.service.implementation.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +22,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @CrossOrigin
@@ -33,6 +37,8 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CustomUserDetailsService customUserDetailsService;
+
+    private final UserStatusRepository userStatusRepository;
 
     @PostMapping("/signup")
     public ResponseEntity<LoginResponseDTO> signup(@RequestBody UpdateUserRequestDTO signupRequestDTO) throws UserException {
@@ -54,6 +60,12 @@ public class AuthController {
                 .build();
 
         userRepository.save(newUser);
+
+        UserStatus userStatus = new UserStatus();
+        userStatus.setUserId(newUser.getId().toString());
+        userStatus.setOnline(true);
+        userStatus.setLastActivityAt(Instant.now());
+        userStatusRepository.save(userStatus);
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(email, password);
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -85,6 +97,15 @@ public class AuthController {
                 .build();
 
         log.info("User {} successfully signed in", loginRequestDTO.email());
+
+        UUID id = userRepository.getIdByEmail(loginRequestDTO.email());
+        Optional<UserStatus> optionalUserStatus = userStatusRepository.findById(id.toString());
+        if (optionalUserStatus.isPresent()){
+            UserStatus userStatus = optionalUserStatus.get();
+            userStatus.setOnline(true);
+            userStatus.setLastActivityAt(Instant.now());
+            userStatusRepository.save(userStatus);
+        }
 
         return new ResponseEntity<>(loginResponseDTO, HttpStatus.ACCEPTED);
     }

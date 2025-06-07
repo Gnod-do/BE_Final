@@ -3,9 +3,11 @@ package com.nicolas.chatapp.service.implementation;
 import com.nicolas.chatapp.config.JwtConstants;
 import com.nicolas.chatapp.config.TokenProvider;
 import com.nicolas.chatapp.dto.request.UpdateUserRequestDTO;
+import com.nicolas.chatapp.dto.response.UserStatusDTO;
 import com.nicolas.chatapp.exception.UserException;
 import com.nicolas.chatapp.model.User;
 import com.nicolas.chatapp.repository.UserRepository;
+import com.nicolas.chatapp.repository.UserStatusRepository;
 import com.nicolas.chatapp.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -19,6 +21,8 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final TokenProvider tokenProvider;
+
+    private final UserStatusRepository userStatusRepository;
 
     @Override
     public User findUserById(UUID id) throws UserException {
@@ -74,6 +78,15 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByFullName(name).stream()
                 .sorted(Comparator.comparing(User::getFullName))
                 .toList();
+    }
+
+    public List<UserStatusDTO> getAllUserStatuses(){
+        return userStatusRepository.findAll().stream()
+                .map(status -> new UserStatusDTO(
+                        status.getUserId(),
+                        status.isOnline(),
+                        status.getLastActivityAt()
+                )).toList();
     }
 
 }
